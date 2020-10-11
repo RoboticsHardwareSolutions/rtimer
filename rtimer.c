@@ -12,9 +12,9 @@ static bool hardware_timer_init(void);
 
 void hardware_timer_cb(TIM_HandleTypeDef *htim);
 
-void timer_msp_init_cb(TIM_HandleTypeDef *htim);
+static void timer_msp_init_cb(TIM_HandleTypeDef *htim);
 
-void timer_msp_deinit_cb(TIM_HandleTypeDef *htim);
+static void timer_msp_deinit_cb(TIM_HandleTypeDef *htim);
 
 /**
  * created timer with one of choosen type
@@ -132,7 +132,7 @@ void hardware_timer_cb(TIM_HandleTypeDef *htim) {
 
         if (current_timer->period == current_timer->elapsed_time) {
 
-                current_timer->callback();
+            current_timer->callback();
 
             if (current_timer->type != periodically)
                 current_timer->activated = false;
@@ -143,29 +143,18 @@ void hardware_timer_cb(TIM_HandleTypeDef *htim) {
 }
 
 
-void timer_msp_init_cb(TIM_HandleTypeDef *htim) {
-
+static void timer_msp_init_cb(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM7) {
         __HAL_RCC_TIM7_CLK_ENABLE();
         HAL_NVIC_SetPriority(TIM7_DAC_IRQn, 5, 0);
         HAL_NVIC_EnableIRQ(TIM7_DAC_IRQn);
     }
-    if (htim->Instance == TIM6) {
-        __HAL_RCC_TIM6_CLK_ENABLE();
-        HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 5, 0);
-        HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
-    }
-
 }
 
-void timer_msp_deinit_cb(TIM_HandleTypeDef *htim) {
+static void timer_msp_deinit_cb(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM7) {
         __HAL_RCC_TIM7_CLK_DISABLE();
         HAL_NVIC_DisableIRQ(TIM7_DAC_IRQn);
-    }
-    if (htim->Instance == TIM6) {
-        __HAL_RCC_TIM6_CLK_DISABLE();
-        HAL_NVIC_DisableIRQ(TIM6_DAC_IRQn);
     }
 }
 
