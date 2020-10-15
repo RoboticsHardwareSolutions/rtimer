@@ -7,26 +7,15 @@ extern "C" {
 
 #include "stdbool.h"
 #include "stdint.h"
-#include "stm32g4xx_hal.h"
+#include "rtimer_def.h"
 
-typedef enum {
-    once,
-    periodically,
-} rtimer_type;
+typedef struct timer_elements rtimer;
 
-typedef struct {
-    rtimer_type type;
-    uint32_t elapsed_time;
-    uint32_t period;
-    bool activated;
-    void (*callback)(void);
-    struct rtimer_t *next;
-} rtimer;
+bool rtimer_create(rtimer *instance);
 
+bool rtimer_setup(rtimer *instance, uint32_t interval_us, void *cb);
 
-bool rtimer_create(rtimer *instance, rtimer_type type);
-
-bool rtimer_setup(rtimer *instance, uint32_t period_ms, void *cb);
+uint32_t rtimer_get_elapsed_time(rtimer *instance);
 
 void rtimer_delete(rtimer *instance);
 

@@ -2,10 +2,26 @@
 #include "string.h"
 #include "stdio.h"
 
+static rtimer *first_timer = NULL;
+
+#if defined(STM32G474xx)
+
+#include "stm32g4xx_hal.h"
 
 TIM_HandleTypeDef htim7;
 
 static rtimer *first_timer = NULL;
+
+
+typedef struct {
+    rtimer_type type;
+    uint32_t elapsed_time;
+    uint32_t period;
+    bool activated;
+    void (*callback)(void);
+    struct rtimer_t *next;
+} rtimer;
+
 bool hardware_started = false;
 
 static bool hardware_timer_init(void);
@@ -119,7 +135,7 @@ void hardware_timer_cb(TIM_HandleTypeDef *htim) {
 
     rtimer **timer = &first_timer;
     rtimer *current_timer = NULL;
-
+    // TODO add increment all timer after again listing and call cb function
     while (*timer != NULL) {
 
         current_timer = *timer;
@@ -161,3 +177,90 @@ static void timer_msp_deinit_cb(TIM_HandleTypeDef *htim) {
 void TIM7_DAC_IRQHandler(void) {
     HAL_TIM_IRQHandler(&htim7);
 }
+
+#endif
+
+#if defined(RTIMER_FOR_WINDOWS) || defined(RTIMER_FOR_UNIX)
+#include <dispatch/dispatch.h>
+#include <sys/time.h>
+#endif
+
+#if defined (RTIMER_FOR_APPLE)
+
+
+bool rtimer_create(rtimer *instance) {
+
+    if (instance == NULL)
+        return false;
+
+    rtimer **timer = &first_timer;
+    while (*timer != NULL) {
+        timer = (rtimer **) &((*timer)->next);
+    }
+    *timer = instance;
+    instance->next = NULL;
+    if (gettimeofday(&instance->last_sig, NULL)) {
+        perror("gettimeofday()");
+    }
+    return true;
+}
+
+bool rtimer_setup(rtimer *instance, uint32_t interval_us, void *cb) {
+
+    if (instance == NULL)
+        return false;
+
+    instance->callback = cb;
+
+#define MAX_NUM_SYMBOL_QUEUE_STR 30
+
+    char queue_num_str[MAX_NUM_SYMBOL_QUEUE_STR];
+    memset(queue_num_str, '\0', MAX_NUM_SYMBOL_QUEUE_STR);
+    sprintf(queue_num_str, "queue pointer: %p", instance);
+
+    instance->queue = dispatch_queue_create(queue_num_str, 0);
+    instance->timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, instance->queue);
+    dispatch_source_set_cancel_handler(instance->timer, ^{
+        dispatch_release(instance->timer);
+        dispatch_release(instance->queue);
+    });
+
+    dispatch_source_set_event_handler(instance->timer, ^{
+        if (gettimeofday(&instance->last_sig, NULL)) {
+            perror("gettimeofday()");
+        }
+        if (instance->callback != NULL) {
+            instance->callback();
+        }
+    });
+    dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, interval_us * 1000);
+    dispatch_source_set_timer(instance->timer, start, interval_us * 1000, 0);
+    if (gettimeofday(&instance->last_sig, NULL)) {
+        perror("gettimeofday()");
+    }
+    dispatch_resume(instance->timer);
+    return true;
+}
+
+uint32_t rtimer_get_elapsed_time(rtimer *instance) {
+
+    if (instance == NULL)
+        return 0;
+
+    struct timeval current_time;
+    if (gettimeofday(&current_time, NULL)) {
+        perror("gettimeofday()");
+        return 0;
+    }
+    return (current_time.tv_sec - instance->last_sig.tv_sec) * 1000000
+           + current_time.tv_usec - instance->last_sig.tv_usec;
+}
+
+void rtimer_delete(rtimer *instance) {
+    if (instance == NULL)
+        return;
+    dispatch_source_cancel(instance->timer);
+}
+
+
+#endif
