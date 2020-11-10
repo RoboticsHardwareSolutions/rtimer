@@ -55,6 +55,7 @@ bool rtimer_setup(rtimer *instance, uint32_t interval_us, void *cb) {
     if (instance == NULL || interval_us == 0)
         return false;
 
+    //TODO check value interval_us if < 100 !!
     instance->period = interval_us / 100;
     instance->elapsed_time = 0;
     instance->callback = cb;
