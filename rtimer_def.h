@@ -2,6 +2,17 @@
 #define __RTIMER_DEF_H
 
 
+#if defined (STM32G474xx)
+
+struct timer_elements{
+    uint32_t elapsed_time;
+    uint32_t period;
+    bool activated;
+    void (*callback)(void);
+    struct timer_elements *next;
+} ;
+
+#endif
 
 #if defined (RTIMER_FOR_APPLE)
 

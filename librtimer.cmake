@@ -1,5 +1,3 @@
-project(rtimer_project)
-
 if (MSVC OR MSYS OR MINGW)
     add_definitions(-DRTIMER_FOR_WINDOWS)
 endif ()
