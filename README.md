@@ -14,7 +14,7 @@ after copy content of repository to folder rcan
    
 For using in CMake project add in CMakeLists.txt next string 
 ```
-include(rcan/librtimer.cmake)
+include(rtimer/librtimer.cmake)
 
 include_directories( ... ${RTIMER_DIRECTORIES})
 
