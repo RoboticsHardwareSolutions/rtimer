@@ -21,7 +21,7 @@ bool rtimer_create(rtimer *instance);
 /**
  * setup period of work timer and setup callback function which call
  */
-bool rtimer_setup(rtimer *instance, uint32_t interval_us, void *cb);
+bool rtimer_setup(rtimer *instance, uint32_t interval_us, void (*cb)(void));
 
 /**
  * return time after last call callback or after create if function rtimer_setup()
@@ -32,7 +32,7 @@ uint32_t rtimer_get_elapsed_time(rtimer *instance);
 /**
  * deactivated timer
  */
-void rtimer_delete(rtimer *instance);
+bool rtimer_delete(rtimer *instance);
 
 #ifdef __cplusplus
 }

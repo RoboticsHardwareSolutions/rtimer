@@ -10,6 +10,7 @@ if (UNIX AND NOT APPLE)
     add_definitions(-DRTIMER_FOR_UNIX)
 endif ()
 
+set(RTIMER_LIBRARIES  rt )
 set(RTIMER_DIRECTORIES  rtimer )
 set(RTIMER_EXECUTABLE_FILES  rtimer/rtimer.c)
 

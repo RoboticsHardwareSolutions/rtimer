@@ -23,7 +23,6 @@ struct timer_elements {
     dispatch_queue_t queue;
     dispatch_source_t timer;
     struct timeval last_sig;
-    int type;
     uint32_t period;
     void (*callback)(void);
     struct timer_elements *next;
@@ -31,5 +30,22 @@ struct timer_elements {
 
 #endif
 
+#if defined (RTIMER_FOR_UNIX)
+
+#include <sys/time.h>
+#include <time.h>
+#include <signal.h>
+
+struct timer_elements {
+    bool run;
+    timer_t timer;
+    struct sigevent sigev;
+    struct timeval last_sig;
+    uint32_t period;
+    void (*callback)(void);
+    struct timer_elements *next;
+};
+
+#endif
 
 #endif

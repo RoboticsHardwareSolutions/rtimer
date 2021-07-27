@@ -19,6 +19,9 @@ include(rtimer/librtimer.cmake)
 include_directories( ... ${RTIMER_DIRECTORIES})
 
 add_executable(... ${RTIMER_EXECUTABLE_FILES})
+
+target_link_libraries(... ${RTIMER_LIBRARIES})
+
 ```
 
 ## example: 

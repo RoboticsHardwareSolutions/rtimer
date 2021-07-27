@@ -167,8 +167,95 @@ void TIM7_DAC_IRQHandler(void) {
 #endif
 
 #if defined(RTIMER_FOR_WINDOWS) || defined(RTIMER_FOR_UNIX)
-#include <dispatch/dispatch.h>
-#include <sys/time.h>
+
+
+#define maxval(a,b) ((a>b)?a:b)
+
+
+bool rtimer_create(rtimer *instance) {
+
+    if (instance == NULL)
+        return false;
+
+    rtimer **timer = &first_timer;
+    while (*timer != NULL) {
+        timer = (rtimer **) &((*timer)->next);
+    }
+    *timer = instance;
+    instance->next = NULL;
+    return true;
+}
+
+bool rtimer_setup(rtimer *instance, uint32_t interval_us, void (*cb)(void)) {
+
+    if (instance == NULL)
+        return false;
+
+    if (gettimeofday(&instance->last_sig, NULL)) {
+        perror("gettimeofday()");
+    }
+
+    if(!instance->run ){
+
+        instance->callback = cb;
+        memset (&instance->sigev, 0, sizeof (struct sigevent));
+        instance->sigev.sigev_value.sival_int = 0;
+        instance->sigev.sigev_notify = SIGEV_THREAD;
+        instance->sigev.sigev_notify_attributes = NULL;
+        instance->sigev.sigev_notify_function = (void* )instance->callback;
+
+        if(timer_create (CLOCK_REALTIME, &instance->sigev, &instance->timer) !=0) {
+            perror("timercreate()");
+            return false;
+        }
+        instance->run = true;
+    }
+
+    long tv_nsec = 1000 * (maxval(interval_us,1)%1000000);
+    time_t tv_sec = interval_us/1000000;
+    struct itimerspec timer_values;
+    timer_values.it_value.tv_sec = tv_sec;
+    timer_values.it_value.tv_nsec = tv_nsec;
+    timer_values.it_interval.tv_sec = 0;
+    timer_values.it_interval.tv_nsec = 0;
+
+    if(timer_settime (instance->timer, 0, &timer_values, NULL) !=0)
+        return false;
+
+    return true;
+}
+
+
+uint32_t rtimer_get_elapsed_time(rtimer *instance) {
+
+    if (instance == NULL)
+        return 0;
+
+    struct timeval current_time;
+    if (gettimeofday(&current_time, NULL)) {
+        perror("gettimeofday()");
+        return 0;
+    }
+    return (current_time.tv_sec - instance->last_sig.tv_sec) * 1000000
+           + current_time.tv_usec - instance->last_sig.tv_usec;
+}
+
+
+bool rtimer_delete(rtimer *instance) {
+
+    if (instance == NULL)
+        return false;
+
+    instance->run = false;
+
+    if(timer_delete (instance->timer) != 0) {
+        perror("timer_delete()");
+        return false;
+
+    }
+    return true;
+}
+
 #endif
 
 #if defined (RTIMER_FOR_APPLE)
