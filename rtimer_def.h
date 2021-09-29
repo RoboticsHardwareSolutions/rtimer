@@ -12,7 +12,7 @@ struct timer_elements{
     struct timer_elements *next;
 } ;
 
-#endif
+#endif // STM32G474xx
 
 #if defined (RTIMER_FOR_APPLE)
 
@@ -28,7 +28,9 @@ struct timer_elements {
     struct timer_elements *next;
 };
 
-#endif
+#endif // RTIMER_FOR_APPLE
+
+
 
 #if defined (RTIMER_FOR_UNIX)
 
@@ -48,4 +50,6 @@ struct timer_elements {
 
 #endif
 
-#endif
+
+
+#endif // __RTIMER_DEF_H
