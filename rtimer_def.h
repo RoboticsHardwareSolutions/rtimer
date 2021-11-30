@@ -39,6 +39,7 @@ struct timer_elements {
 #include <signal.h>
 
 struct timer_elements {
+    bool run;
     timer_t timer;
     struct sigevent sigev;
     struct timeval last_sig;
