@@ -275,7 +275,7 @@ bool rtimer_create(rtimer *instance) {
     return true;
 }
 
-bool rtimer_setup(rtimer *instance, uint32_t interval_us, void *cb) {
+bool rtimer_setup(rtimer *instance, uint32_t interval_us, void (*cb)(void)) {
 
     if (instance == NULL)
         return false;
@@ -326,9 +326,10 @@ uint32_t rtimer_get_elapsed_time(rtimer *instance) {
            + current_time.tv_usec - instance->last_sig.tv_usec;
 }
 
-void rtimer_delete(rtimer *instance) {
+bool rtimer_delete(rtimer *instance) {
     if (instance == NULL)
-        return;
+        return false;
     dispatch_source_cancel(instance->timer);
+    return true;
 }
 #endif
