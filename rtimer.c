@@ -330,5 +330,6 @@ bool rtimer_delete(rtimer *instance){
     if (instance == NULL)
         return false;
     dispatch_source_cancel(instance->timer);
+    return true;
 }
 #endif
