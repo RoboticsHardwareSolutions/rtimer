@@ -296,15 +296,12 @@ bool rtimer_setup(rtimer *instance, uint32_t interval_us, void (*cb)(void)){
     });
 
     dispatch_source_set_event_handler(instance->timer, ^{
-        if (gettimeofday(&instance->last_sig, NULL)) {
-            perror("gettimeofday()");
-        }
         if (instance->callback != NULL) {
             instance->callback();
         }
     });
     dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, interval_us * 1000);
-    dispatch_source_set_timer(instance->timer, start, interval_us * 1000, 0);
+    dispatch_source_set_timer(instance->timer, start, DISPATCH_TIME_FOREVER, 0);
     if (gettimeofday(&instance->last_sig, NULL)) {
         perror("gettimeofday()");
     }
