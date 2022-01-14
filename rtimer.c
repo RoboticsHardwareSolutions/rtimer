@@ -4,6 +4,170 @@
 
 static rtimer *first_timer = NULL;
 
+#if defined(STM32F103xB)
+
+#include "stm32f1xx_hal.h"
+
+TIM_HandleTypeDef htim4;
+
+
+bool hardware_started = false;
+
+static bool hardware_timer_init(void);
+
+void hardware_timer_cb(TIM_HandleTypeDef *htim);
+
+static void timer_msp_init_cb(TIM_HandleTypeDef *htim);
+
+static void timer_msp_deinit_cb(TIM_HandleTypeDef *htim);
+
+
+bool rtimer_create(rtimer *instance) {
+
+    if (instance == NULL)
+        return false;
+
+    instance->next = NULL;
+    instance->callback = NULL;
+    instance->activated = false;
+    instance->elapsed_time = 0;
+
+    rtimer **timer = &first_timer;
+
+    while (*timer != NULL) {
+        timer = (rtimer **) &((*timer)->next);
+    }
+    *timer = instance;
+
+
+    if (!hardware_started) {
+
+        if (!hardware_timer_init())
+            return false;
+        else
+            hardware_started = true;
+    }
+    return true;
+}
+
+bool rtimer_setup(rtimer *instance, uint32_t interval_us, void (*cb)(void)) {
+
+    if (instance == NULL || interval_us == 0)
+        return false;
+
+    //TODO check value interval_us if < 100 !!
+    instance->period = interval_us / 100;
+    instance->elapsed_time = 0;
+    instance->callback = cb;
+    instance->activated = true;
+
+    return true;
+
+}
+
+
+bool rtimer_delete(rtimer *instance) {
+    if (instance == NULL)
+        return false;
+
+    instance->activated = false;
+
+    return true;
+}
+
+
+bool hardware_timer_init(void) {
+
+    TIM_MasterConfigTypeDef config = {0};
+
+    uint32_t timclock = HAL_RCC_GetPCLK1Freq();
+
+    uint32_t prescaler = timclock / 1000000 - 1;
+
+    htim4.Instance = TIM4;
+    htim4.Init.Prescaler = prescaler;
+    htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim4.Init.Period = 100 - 1;
+    htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+    config.MasterOutputTrigger = TIM_TRGO_RESET;
+    config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+
+
+    if (HAL_TIM_RegisterCallback(&htim4, HAL_TIM_BASE_MSPINIT_CB_ID, timer_msp_init_cb) != HAL_OK)
+        return false;
+
+    if (HAL_TIM_RegisterCallback(&htim4, HAL_TIM_BASE_MSPDEINIT_CB_ID, timer_msp_deinit_cb) != HAL_OK)
+        return false;
+
+    if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+        return false;
+
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &config) != HAL_OK)
+        return false;
+
+    if (HAL_TIM_RegisterCallback(&htim4, HAL_TIM_PERIOD_ELAPSED_CB_ID, hardware_timer_cb) != HAL_OK)
+        return false;
+
+    if (HAL_TIM_Base_Start_IT(&htim4) != HAL_OK)
+        return false;
+
+
+    return true;
+}
+
+void hardware_timer_cb(TIM_HandleTypeDef *htim) {
+
+    rtimer **timer = &first_timer;
+    rtimer *current_timer = NULL;
+
+    while (*timer != NULL) {
+        current_timer = *timer;
+        current_timer->elapsed_time++;
+        timer = (rtimer **) &((*timer)->next);
+    }
+
+    timer = &first_timer;
+
+    while (*timer != NULL) {
+        current_timer = *timer;
+        if (current_timer->activated) {
+            if (current_timer->elapsed_time >= current_timer->period) {
+                if (current_timer->callback != 0)
+                    current_timer->callback();
+
+                current_timer->elapsed_time = 0;
+            }
+        }
+        timer = (rtimer **) &((*timer)->next);
+    }
+}
+
+uint32_t rtimer_get_elapsed_time(rtimer *instance) {
+    return instance->elapsed_time * 100;
+}
+
+static void timer_msp_init_cb(TIM_HandleTypeDef *htim) {
+    if (htim->Instance == TIM4) {
+        __HAL_RCC_TIM4_CLK_ENABLE();
+        HAL_NVIC_SetPriority(TIM4_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ(TIM4_IRQn);
+    }
+}
+
+static void timer_msp_deinit_cb(TIM_HandleTypeDef *htim) {
+    if (htim->Instance == TIM4) {
+        __HAL_RCC_TIM4_CLK_DISABLE();
+        HAL_NVIC_DisableIRQ(TIM4_IRQn);
+    }
+}
+
+void TIM4_IRQHandler(void) {
+    HAL_TIM_IRQHandler(&htim4);
+}
+
+#endif
+
 #if defined(STM32G474xx)
 
 #include "stm32g4xx_hal.h"
@@ -132,9 +296,10 @@ void hardware_timer_cb(TIM_HandleTypeDef *htim) {
         current_timer = *timer;
         if (current_timer->activated) {
             if (current_timer->elapsed_time >= current_timer->period) {
-                current_timer->elapsed_time = 0;
                 if (current_timer->callback != 0)
                     current_timer->callback();
+
+                current_timer->elapsed_time = 0;
             }
         }
         timer = (rtimer **) &((*timer)->next);
@@ -296,15 +461,12 @@ bool rtimer_setup(rtimer *instance, uint32_t interval_us, void (*cb)(void)){
     });
 
     dispatch_source_set_event_handler(instance->timer, ^{
-        if (gettimeofday(&instance->last_sig, NULL)) {
-            perror("gettimeofday()");
-        }
         if (instance->callback != NULL) {
             instance->callback();
         }
     });
     dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, interval_us * 1000);
-    dispatch_source_set_timer(instance->timer, start, interval_us * 1000, 0);
+    dispatch_source_set_timer(instance->timer, start, DISPATCH_TIME_FOREVER, 0);
     if (gettimeofday(&instance->last_sig, NULL)) {
         perror("gettimeofday()");
     }

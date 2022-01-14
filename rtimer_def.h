@@ -2,7 +2,7 @@
 #define __RTIMER_DEF_H
 
 
-#if defined (STM32G474xx)
+#if defined (STM32G474xx) || defined(STM32F103xB)
 
 struct timer_elements{
     uint32_t elapsed_time;
