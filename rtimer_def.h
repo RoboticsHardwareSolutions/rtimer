@@ -14,7 +14,7 @@
 #define __HAL_RCC_TIM_CLK_ENABLE() __HAL_RCC_TIM4_CLK_ENABLE()
 #define TIM_IRQHandler TIM4_IRQHandler
 
-#elif defined(STM32F072xB)
+#elif defined(STM32F072xB) || defined(STM32F091xC)
 
 #include "stm32f0xx_hal.h"
 #define HTIM htim2
@@ -27,7 +27,7 @@
 #endif
 
 
-#if defined (STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB)
+#if defined (STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB) || defined(STM32F091xC)
 
 struct timer_elements{
     uint32_t elapsed_time;
