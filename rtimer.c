@@ -83,7 +83,7 @@ bool hardware_timer_init(void) {
 
     uint32_t prescaler = timclock / 1000000 - 1;
 
-    HTIM.Instance = TIM2;
+    HTIM.Instance = TIM;
     HTIM.Init.Prescaler = prescaler;
     HTIM.Init.CounterMode = TIM_COUNTERMODE_UP;
     HTIM.Init.Period = 200 - 1;
