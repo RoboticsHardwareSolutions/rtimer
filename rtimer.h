@@ -16,23 +16,23 @@ typedef struct timer_elements rtimer;
  * periodically or once shot
  * return false if hardware timer not started
  */
-bool rtimer_create(rtimer *instance);
+bool rtimer_create(rtimer* instance);
 
 /**
  * setup period of work timer and setup callback function which call
  */
-bool rtimer_setup(rtimer *instance, uint32_t interval_us, void (*cb)(void));
+bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void));
 
 /**
  * return time after last call callback or after create if function rtimer_setup()
  * didn't call early
  */
-uint32_t rtimer_get_elapsed_time(rtimer *instance);
+uint32_t rtimer_get_elapsed_time(rtimer* instance);
 
 /**
  * deactivated timer
  */
-bool rtimer_delete(rtimer *instance);
+bool rtimer_delete(rtimer* instance);
 
 #ifdef __cplusplus
 }
