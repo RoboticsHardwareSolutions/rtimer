@@ -1,3 +1,7 @@
+message("Hello from rtimer!")
+message("Full path to module: ${CMAKE_CURRENT_LIST_FILE}")
+message("Module located in directory: ${CMAKE_CURRENT_LIST_DIR}")
+
 if (MSVC OR MSYS OR MINGW)
     add_definitions(-DRTIMER_FOR_WINDOWS)
 endif ()
@@ -11,8 +15,8 @@ if (UNIX AND NOT APPLE)
     set(RTIMER_LIBRARIES  rt )
 endif ()
 
-set(RTIMER_DIRECTORIES  rtimer )
-set(RTIMER_EXECUTABLE_FILES  rtimer/rtimer.c)
+set(RTIMER_DIRECTORIES  ${CMAKE_CURRENT_LIST_DIR} )
+set(RTIMER_EXECUTABLE_FILES  ${CMAKE_CURRENT_LIST_DIR}/rtimer.c)
 
 
 
