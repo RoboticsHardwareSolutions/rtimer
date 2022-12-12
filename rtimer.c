@@ -461,7 +461,7 @@ bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void))
 
     char queue_num_str[MAX_NUM_SYMBOL_QUEUE_STR];
     memset(queue_num_str, '\0', MAX_NUM_SYMBOL_QUEUE_STR);
-    sprintf(queue_num_str, "queue pointer: %p", instance);
+    sprintf(queue_num_str, "queue pointer: %p", (void *)instance);
 
     instance->queue = dispatch_queue_create(queue_num_str, 0);
     instance->timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, instance->queue);
@@ -497,8 +497,8 @@ uint32_t rtimer_get_elapsed_time(rtimer* instance)
         perror("gettimeofday()");
         return 0;
     }
-    return (current_time.tv_sec - instance->last_sig.tv_sec) * 1000000 + current_time.tv_usec -
-           instance->last_sig.tv_usec;
+    return (uint32_t)((current_time.tv_sec - instance->last_sig.tv_sec) * 1000000 + current_time.tv_usec -
+           instance->last_sig.tv_usec);
 }
 
 bool rtimer_delete(rtimer* instance)
