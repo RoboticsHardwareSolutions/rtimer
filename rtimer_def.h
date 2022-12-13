@@ -23,7 +23,7 @@
 #    define __HAL_RCC_TIM_CLK_ENABLE() __HAL_RCC_TIM2_CLK_ENABLE()
 #    define TIM_IRQHandler TIM2_IRQHandler
 
-#elif defined(STM32F407xx)
+#elif defined(STM32F407xx) || defined(STM32F429xx)
 #    include "stm32f4xx_hal.h"
 #    define HTIM htim2
 #    define TIM TIM2
@@ -34,7 +34,7 @@
 
 #endif
 
-#if defined(STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB) || defined(STM32F091xC) || defined(STM32F407xx)
+#if defined(STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB) || defined(STM32F091xC) || defined(STM32F407xx) || defined(STM32F429xx)
 
 struct timer_elements
 {

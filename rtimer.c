@@ -4,7 +4,7 @@
 
 static rtimer* first_timer = NULL;
 
-#if defined(STM32F072xB) || defined(STM32F091xC) || defined(STM32F103xB) || defined(STM32F407xx)
+#if defined(STM32F072xB) || defined(STM32F091xC) || defined(STM32F103xB) || defined(STM32F407xx) || defined(STM32F429xx)
 
 TIM_HandleTypeDef HTIM;
 
