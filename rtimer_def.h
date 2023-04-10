@@ -3,7 +3,7 @@
 
 #if defined(STM32G474xx)
 
-#elif defined(STM32F103xB)
+#elif defined(STM32F103xB) || defined(STM32F103xE)
 
 #    include "stm32f1xx_hal.h"
 #    define HTIM htim4
@@ -34,7 +34,8 @@
 
 #endif
 
-#if defined(STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB) || defined(STM32F091xC) || defined(STM32F407xx) || defined(STM32F429xx)
+#if defined(STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB) || defined(STM32F091xC) || \
+    defined(STM32F407xx) || defined(STM32F429xx) || defined(STM32F103xE)
 
 struct timer_elements
 {
