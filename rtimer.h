@@ -34,6 +34,8 @@ uint32_t rtimer_get_elapsed_time(rtimer* instance);
  */
 bool rtimer_delete(rtimer* instance);
 
+bool hardware_timer_deinit(void);
+
 #ifdef __cplusplus
 }
 #endif

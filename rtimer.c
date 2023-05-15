@@ -70,6 +70,21 @@ bool rtimer_delete(rtimer* instance)
     return true;
 }
 
+bool hardware_timer_deinit(void)
+{
+    HTIM.Instance = TIM;
+
+    if (HAL_TIM_Base_DeInit(&HTIM) != HAL_OK)
+        return false;
+
+
+    if (HAL_TIM_Base_Stop_IT(&HTIM) != HAL_OK)
+        return false;
+
+    return true;
+}
+
+
 bool hardware_timer_init(void)
 {
     TIM_MasterConfigTypeDef config = {0};
