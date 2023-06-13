@@ -6,7 +6,7 @@ project(rtimer
         "simple C lib for using timer functions in your project")
 
 add_library(rtimer rtimer.c rtimer.h rtimer_def.h)
-add_subdirectory(tests/runit)
+
 
 add_executable(${PROJECT_NAME}_test
         tests/test.c

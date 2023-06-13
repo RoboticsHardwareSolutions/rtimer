@@ -79,13 +79,11 @@ bool hardware_timer_deinit(void)
     if (HAL_TIM_Base_DeInit(&HTIM) != HAL_OK)
         return false;
 
-
     if (HAL_TIM_Base_Stop_IT(&HTIM) != HAL_OK)
         return false;
 
     return true;
 }
-
 
 bool hardware_timer_init(void)
 {
