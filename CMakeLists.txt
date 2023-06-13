@@ -5,35 +5,53 @@ project(rtimer
         DESCRIPTION
         "simple C lib for using timer functions in your project")
 
-add_library(rtimer rserial.c rserial.h)
+add_library(rtimer rtimer.c rtimer.h rtimer_def.h)
+add_subdirectory(tests/runit)
 
-add_executable(rserial_test
-        test/runit/src/runit.c
-        rserial.h
-        rserial.c
-        test/test.c)
-
+add_executable(${PROJECT_NAME}_test
+        tests/test.c
+        rtimer.c)
 
 
-target_include_directories(rserial_test PRIVATE ./ ./test/runit/src)
-#include(test/runit/compiler_flags.cmake) # uncomment it for test
+#target_include_directories(${PROJECT_NAME}_test PRIVATE c)
+include(tests/runit/compiler_flags.cmake) # uncomment it for test
+
+# for tests for lib
 
 if (MSVC OR MSYS OR MINGW)
-    target_compile_definitions(rserial PUBLIC -DRSERIAL_FOR_WINDOWS)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DRTIMER_FOR_WINDOWS)
 endif ()
 
 if (APPLE)
-    target_compile_definitions(rserial PUBLIC -DRSERIAL_FOR_APPLE)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DRTIMER_FOR_APPLE)
 endif ()
 
 if (UNIX AND NOT APPLE)
-    target_compile_definitions(rserial PUBLIC -DRSERIAL_FOR_UNIX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DRTIMER_FOR_UNIX)
+    target_link_libraries(${PROJECT_NAME} PRIVATE rt)
+endif ()
+
+# for tests
+
+if (MSVC OR MSYS OR MINGW)
+    target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_WINDOWS)
+    target_link_libraries(${PROJECT_NAME} PRIVATE runit )
+endif ()
+
+if (APPLE)
+    target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_APPLE)
+    target_link_libraries(${PROJECT_NAME}_test runit )
+endif ()
+
+if (UNIX AND NOT APPLE)
+    target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_UNIX)
+    target_link_libraries(${PROJECT_NAME}_test PRIVATE rt runit)
 endif ()
 
 set(FILES_FOR_FORMATTING
-        rserial.c
-        rserial.h
-        test/test.c
+        rtimer.c
+        rtimer_def.h
+        rtimer.h
         )
 
 # clang-format
@@ -43,9 +61,9 @@ if (NOT clang_format)
 else ()
     file(GLOB format_files ${FILES_FOR_FORMATTING})
     message(STATUS "Using clang-format: ${clang_format}; files: ${format_files}")
-    add_custom_target(format_rserial COMMAND ${clang_format} -i -fallback-style=none -style=file --verbose ${format_files})
+    add_custom_target(format_rtimer COMMAND ${clang_format} -i -fallback-style=none -style=file --verbose ${format_files})
 endif ()
 
 
 enable_testing()
-add_test(NAME rserial_test COMMAND rserial_test)
+add_test(NAME ${PROJECT_NAME}_test COMMAND ${PROJECT_NAME}_test)
