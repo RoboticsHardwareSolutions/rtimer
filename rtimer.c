@@ -76,12 +76,15 @@ bool hardware_timer_init(void)
 
     uint32_t timclock = HAL_RCC_GetPCLK1Freq();
 
+    if(HAL_RCC_GetHCLKFreq() != HAL_RCC_GetPCLK1Freq())
+        timclock *= 2;
+
     uint32_t prescaler = timclock / 1000000 - 1;
 
     HTIM.Instance               = TIM;
     HTIM.Init.Prescaler         = prescaler;
     HTIM.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    HTIM.Init.Period            = 200 - 1;
+    HTIM.Init.Period            = 100 - 1;
     HTIM.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 
     config.MasterOutputTrigger = TIM_TRGO_RESET;
@@ -117,14 +120,6 @@ void hardware_timer_cb(TIM_HandleTypeDef* htim)
     {
         current_timer = *timer;
         current_timer->elapsed_time++;
-        timer = (rtimer**) &((*timer)->next);
-    }
-
-    timer = &first_timer;
-
-    while (*timer != NULL)
-    {
-        current_timer = *timer;
         if (current_timer->activated)
         {
             if (current_timer->elapsed_time >= current_timer->period)
