@@ -1,0 +1,3 @@
+[submodule "tests/runit"]
+	path = tests/runit
+	url = git@gitlab.com:RoboticsHardwareSolutions/rlibs/runit.git
