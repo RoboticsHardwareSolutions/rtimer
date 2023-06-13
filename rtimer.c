@@ -70,6 +70,8 @@ bool rtimer_delete(rtimer* instance)
     return true;
 }
 
+// TODO @PaulFirs if deleted (deactivated )last timer in list make hardware  hardware_timer_deinit
+// TODO bool hardware_timer_deinit(void); - delete this from rtimer.h
 bool hardware_timer_deinit(void)
 {
     HTIM.Instance = TIM;
