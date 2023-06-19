@@ -12,6 +12,8 @@ bool hardware_started = false;
 
 static bool hardware_timer_init(void);
 
+static bool hardware_timer_deinit(void);
+
 void hardware_timer_cb(TIM_HandleTypeDef* htim);
 
 static void timer_msp_init_cb(TIM_HandleTypeDef* htim);
@@ -65,27 +67,11 @@ bool rtimer_delete(rtimer* instance)
     if (instance == NULL)
         return false;
 
+    hardware_timer_deinit();
     instance->activated = false;
 
     return true;
 }
-
-// TODO @PaulFirs if deleted (deactivated )last timer in list make hardware  hardware_timer_deinit
-// TODO bool hardware_timer_deinit(void); - delete this from rtimer.h
-bool hardware_timer_deinit(void)
-{
-    HTIM.Instance = TIM;
-
-    if (HAL_TIM_Base_DeInit(&HTIM) != HAL_OK)
-        return false;
-
-
-    if (HAL_TIM_Base_Stop_IT(&HTIM) != HAL_OK)
-        return false;
-
-    return true;
-}
-
 
 bool hardware_timer_init(void)
 {
@@ -120,6 +106,20 @@ bool hardware_timer_init(void)
         return false;
 
     if (HAL_TIM_Base_Start_IT(&HTIM) != HAL_OK)
+        return false;
+
+    return true;
+}
+
+bool hardware_timer_deinit(void)
+{
+    HTIM.Instance = TIM;
+
+    if (HAL_TIM_Base_DeInit(&HTIM) != HAL_OK)
+        return false;
+
+
+    if (HAL_TIM_Base_Stop_IT(&HTIM) != HAL_OK)
         return false;
 
     return true;
