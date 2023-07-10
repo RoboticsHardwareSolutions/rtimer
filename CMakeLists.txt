@@ -13,8 +13,21 @@ add_executable(${PROJECT_NAME}_test
         rtimer.c)
 
 
+if (arm-none-eabi-gcc)
+    if (NOT NO_STATIC_ANALYSIS)
+        # clang-tidy (separate config files per directory)
+        find_program(clang_tidy NAMES clang-tidy)
+        if (NOT clang_tidy)
+            message(FATAL_ERROR "Could not locate clang-tidy")
+        endif ()
+        message(STATUS "Using clang-tidy: ${clang_tidy}")
+        set(CMAKE_C_CLANG_TIDY ${clang_tidy})
+        set(CMAKE_CXX_CLANG_TIDY ${clang_tidy})
+    endif ()
+endif ()
+
 #target_include_directories(${PROJECT_NAME}_test PRIVATE c)
-include(tests/runit/compiler_flags.cmake) # uncomment it for test
+#include(tests/runit/compiler_flags.cmake) # uncomment it for test
 
 # for tests for lib
 

@@ -4,7 +4,8 @@
 
 static rtimer* first_timer = NULL;
 
-#if defined(STM32F072xB) || defined(STM32F091xC) || defined(STM32F103xB) || defined(STM32F407xx) || defined(STM32F429xx) || defined(STM32F103xE) || || defined(STM32F765xx)
+#if defined(STM32F072xB) || defined(STM32F091xC) || defined(STM32F103xB) || defined(STM32F407xx) || \
+    defined(STM32F429xx) || defined(STM32F103xE) || defined(STM32F765xx)
 
 TIM_HandleTypeDef HTIM;
 
@@ -79,7 +80,7 @@ bool hardware_timer_init(void)
 
     uint32_t timclock = HAL_RCC_GetPCLK1Freq();
 
-    if(HAL_RCC_GetHCLKFreq() != HAL_RCC_GetPCLK1Freq())
+    if (HAL_RCC_GetHCLKFreq() != HAL_RCC_GetPCLK1Freq())
         timclock *= 2;
 
     uint32_t prescaler = timclock / 1000000 - 1;
@@ -120,7 +121,6 @@ bool hardware_timer_deinit(void)
 
     if (HAL_TIM_Base_DeInit(&HTIM) != HAL_OK)
         return false;
-
 
     if (HAL_TIM_Base_Stop_IT(&HTIM) != HAL_OK)
         return false;
