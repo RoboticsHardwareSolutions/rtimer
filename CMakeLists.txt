@@ -5,8 +5,12 @@ project(rtimer
         DESCRIPTION
         "simple C lib for using timer functions in your project")
 
-add_library(rtimer rtimer.c rtimer.h rtimer_def.h)
+add_library(${PROJECT_NAME} rtimer.c)
 
+target_include_directories(
+        ${PROJECT_NAME} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
 
 add_executable(${PROJECT_NAME}_test
         tests/test.c
