@@ -19,6 +19,8 @@
 
 #endif
 
+#if defined(RTIMER_FOR_UNIX) || defined(RTIMER_FOR_WINDOWS) || defined(RTIMER_FOR_APPLE)
+
 #define TIMER_INTERVAL 1000
 
 rtimer timer;
@@ -58,9 +60,14 @@ void test_rtimer_void(void)
     runit_true(rtimer_delete(&timer));
 }
 
+#endif
+
 int main(void)
 {
+
+#if defined(RTIMER_FOR_UNIX) || defined(RTIMER_FOR_WINDOWS) || defined(RTIMER_FOR_APPLE)
     test_rtimer_void();
+#endif
     runit_report();
     return runit_at_least_one_fail;  // Non-zero in case of error to provide a proper exit-code
 }
