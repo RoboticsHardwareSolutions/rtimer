@@ -12,10 +12,6 @@ target_include_directories(
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-add_executable(${PROJECT_NAME}_test
-        tests/test.c
-        rtimer.c)
-
 
 if (arm-none-eabi-gcc)
     if (NOT NO_STATIC_ANALYSIS)
@@ -48,28 +44,38 @@ if (UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE rt)
 endif ()
 
-# for tests
 
-if (MSVC OR MSYS OR MINGW)
-    target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_WINDOWS)
-    target_link_libraries(${PROJECT_NAME} PRIVATE runit )
+# Test runner executable testing the static library
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES Generic)
+    add_executable(${PROJECT_NAME}_test
+            tests/test.c
+            rtimer.c)
+
+    if (MSVC OR MSYS OR MINGW)
+        target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_WINDOWS)
+        target_link_libraries(${PROJECT_NAME}_test PRIVATE runit)
+    endif ()
+
+    if (APPLE)
+        target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_APPLE)
+        target_link_libraries(${PROJECT_NAME}_test runit)
+    endif ()
+
+    if (UNIX AND NOT APPLE)
+        target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_UNIX)
+        target_link_libraries(${PROJECT_NAME}_test PRIVATE rt runit)
+    endif ()
+
+    enable_testing()
+    add_test(NAME ${PROJECT_NAME}_test COMMAND ${PROJECT_NAME}_test)
 endif ()
 
-if (APPLE)
-    target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_APPLE)
-    target_link_libraries(${PROJECT_NAME}_test runit )
-endif ()
-
-if (UNIX AND NOT APPLE)
-    target_compile_definitions(${PROJECT_NAME}_test PUBLIC -DRTIMER_FOR_UNIX)
-    target_link_libraries(${PROJECT_NAME}_test PRIVATE rt runit)
-endif ()
 
 set(FILES_FOR_FORMATTING
         rtimer.c
         rtimer_def.h
         rtimer.h
-        )
+)
 
 # clang-format
 find_program(clang_format NAMES clang-format)
@@ -80,7 +86,3 @@ else ()
     message(STATUS "Using clang-format: ${clang_format}; files: ${format_files}")
     add_custom_target(format_rtimer COMMAND ${clang_format} -i -fallback-style=none -style=file --verbose ${format_files})
 endif ()
-
-
-enable_testing()
-add_test(NAME ${PROJECT_NAME}_test COMMAND ${PROJECT_NAME}_test)
