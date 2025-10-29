@@ -3,6 +3,16 @@
 
 #if defined(STM32G474xx)
 
+#elif defined(STM32G0B1xx)
+
+#    include "stm32g0xx_hal.h"
+#    include "stm32g0xx_hal_tim.h"
+#    define TIM TIM4
+#    define TIM_IRQn TIM4_IRQn
+#    define __HAL_RCC_TIM_CLK_DISABLE() __HAL_RCC_TIM4_CLK_DISABLE()
+#    define __HAL_RCC_TIM_CLK_ENABLE() __HAL_RCC_TIM4_CLK_ENABLE()
+#    define TIM_IRQHandler TIM4_IRQHandler
+
 #elif defined(STM32F103xB) || defined(STM32F103xE)
 
 #    include "stm32f1xx_hal.h"
@@ -46,7 +56,8 @@
 #endif
 
 #if defined(STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB) || defined(STM32F091xC) || \
-defined(STM32F407xx) || defined(STM32F429xx) || defined(STM32F765xx) || defined(STM32F103xE)
+    defined(STM32F407xx) || defined(STM32F429xx) || defined(STM32F765xx) || defined(STM32F103xE) || \
+    defined(STM32G0B1xx)
 
 struct timer_elements
 {
@@ -78,9 +89,9 @@ struct timer_elements
 
 #if defined(RTIMER_FOR_UNIX)
 
+#    include <signal.h>
 #    include <sys/time.h>
 #    include <time.h>
-#    include <signal.h>
 
 struct timer_elements
 {

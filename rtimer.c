@@ -1,6 +1,6 @@
 #include "rtimer.h"
-#include "string.h"
 #include "stdio.h"
+#include "string.h"
 
 static rtimer* first_timer = NULL;
 
@@ -178,6 +178,175 @@ static void timer_msp_deinit_cb(TIM_HandleTypeDef* htim)
 void TIM_IRQHandler(void)
 {
     HAL_TIM_IRQHandler(&HTIM);
+}
+
+#endif
+
+#if defined(STM32G0B1xx)
+
+#    include "stm32g0xx_hal.h"
+#    include "stm32g0xx_hal_tim.h"
+
+TIM_HandleTypeDef htim;
+
+bool hardware_started = false;
+
+static bool hardware_timer_init(void);
+
+void hardware_timer_cb(TIM_HandleTypeDef* htim);
+
+// static void timer_msp_init_cb(TIM_HandleTypeDef* htim);
+//
+// static void timer_msp_deinit_cb(TIM_HandleTypeDef* htim);
+
+bool rtimer_create(rtimer* instance)
+{
+    if (instance == NULL)
+        return false;
+
+    instance->next         = NULL;
+    instance->callback     = NULL;
+    instance->activated    = false;
+    instance->elapsed_time = 0;
+
+    rtimer** timer = &first_timer;
+
+    while (*timer != NULL)
+    {
+        timer = (rtimer**) &((*timer)->next);
+    }
+    *timer = instance;
+
+    if (!hardware_started)
+    {
+        if (!hardware_timer_init())
+            return false;
+        else
+            hardware_started = true;
+    }
+    return true;
+}
+
+bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void))
+{
+    if (instance == NULL || interval_us == 0)
+        return false;
+
+    // TODO check value interval_us if < 100 !!
+    instance->period       = interval_us / 100;
+    instance->elapsed_time = 0;
+    instance->callback     = cb;
+    instance->activated    = true;
+
+    return true;
+}
+
+bool rtimer_delete(rtimer* instance)
+{
+    if (instance == NULL)
+        return false;  // TODO: check what we need to return if rtimer is null
+
+    instance->activated = false;
+    return true;
+}
+
+bool hardware_timer_init(void)
+{
+    TIM_MasterConfigTypeDef config = {0};
+
+    uint32_t timclock = HAL_RCC_GetPCLK1Freq();
+
+    uint32_t prescaler = timclock / 1000000 - 1;
+
+    htim.Instance               = TIM4;
+    htim.Init.Prescaler         = prescaler;
+    htim.Init.CounterMode       = TIM_COUNTERMODE_UP;
+    htim.Init.Period            = 100 - 1;
+    htim.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+    config.MasterOutputTrigger  = TIM_TRGO_RESET;
+    config.MasterSlaveMode      = TIM_MASTERSLAVEMODE_DISABLE;
+    config.MasterOutputTrigger2 = TIM_TRGO_RESET;
+
+    // if (HAL_TIM_RegisterCallback(&htim4, HAL_TIM_BASE_MSPINIT_CB_ID, timer_msp_init_cb) != HAL_OK)
+    //     return false;
+    //
+    // if (HAL_TIM_RegisterCallback(&htim4, HAL_TIM_BASE_MSPDEINIT_CB_ID, timer_msp_deinit_cb) != HAL_OK)
+    //     return false;
+
+    if (HAL_TIM_Base_Init(&htim) != HAL_OK)
+        return false;
+
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim, &config) != HAL_OK)
+        return false;
+
+    if (HAL_TIM_RegisterCallback(&htim, HAL_TIM_PERIOD_ELAPSED_CB_ID, hardware_timer_cb) != HAL_OK)
+        return false;
+
+    if (HAL_TIM_Base_Start_IT(&htim) != HAL_OK)
+        return false;
+
+    return true;
+}
+
+void hardware_timer_cb(TIM_HandleTypeDef* htim)
+{
+    rtimer** timer         = &first_timer;
+    rtimer*  current_timer = NULL;
+
+    while (*timer != NULL)
+    {
+        current_timer = *timer;
+        current_timer->elapsed_time++;
+        timer = (rtimer**) &((*timer)->next);
+    }
+
+    timer = &first_timer;
+
+    while (*timer != NULL)
+    {
+        current_timer = *timer;
+        if (current_timer->activated)
+        {
+            if (current_timer->elapsed_time >= current_timer->period)
+            {
+                if (current_timer->callback != 0)
+                    current_timer->callback();
+
+                current_timer->elapsed_time = 0;
+            }
+        }
+        timer = (rtimer**) &((*timer)->next);
+    }
+}
+
+uint32_t rtimer_get_elapsed_time(rtimer* instance)
+{
+    return instance->elapsed_time * 100;
+}
+
+// static void timer_msp_init_cb(TIM_HandleTypeDef* htim)
+// {
+//     if (htim->Instance == TIM4)
+//     {
+//         __HAL_RCC_TIM4_CLK_ENABLE();
+//         HAL_NVIC_SetPriority(TIM4_DAC_IRQn, 5, 0);
+//         HAL_NVIC_EnableIRQ(TIM4_DAC_IRQn);
+//     }
+// }
+//
+// static void timer_msp_deinit_cb(TIM_HandleTypeDef* htim)
+// {
+//     if (htim->Instance == TIM4)
+//     {
+//         __HAL_RCC_TIM4_CLK_DISABLE();
+//         HAL_NVIC_DisableIRQ(TIM4_DAC_IRQn);
+//     }
+// }
+
+void TIM4_DAC_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&htim);
 }
 
 #endif
