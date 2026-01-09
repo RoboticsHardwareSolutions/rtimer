@@ -25,7 +25,7 @@ if (UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE rt)
 endif ()
 
-# Test runner executable testing the static library
+#################### TEST SECTION #######################
 if (NOT ${CMAKE_SYSTEM_NAME} MATCHES Generic)
     add_executable(${PROJECT_NAME}_test test/test.c)
     if (NOT TARGET runit)
@@ -44,19 +44,26 @@ if (NOT ${CMAKE_SYSTEM_NAME} MATCHES Generic)
 endif ()
 
 
+
+#################### FORMAT SECTION #######################
+include(FetchContent)
+FetchContent_Declare(
+        rlibhelper
+        GIT_REPOSITORY https://github.com/RoboticsHardwareSolutions/rlibhelper.git
+        GIT_TAG main
+)
+FetchContent_MakeAvailable(rlibhelper)
+
 set(FILES_FOR_FORMATTING
         rtimer.c
         rtimer_def.h
         rtimer.h
         test/test.c
 )
-
-# clang-format
-find_program(clang_format NAMES clang-format)
-if (NOT clang_format)
-    message(STATUS "Could not locate clang-format")
+if (EXISTS "${rlibhelper_SOURCE_DIR}/format.cmake")
+    include(${rlibhelper_SOURCE_DIR}/format.cmake)
 else ()
-    file(GLOB format_files ${FILES_FOR_FORMATTING})
-    message(STATUS "Using clang-format: ${clang_format}; files: ${format_files}")
-    add_custom_target(${PROJECT_NAME}_format COMMAND ${clang_format} -i -fallback-style=none -style=file --verbose ${format_files})
+    message(WARNING "format.cmake file not found")
 endif ()
+format_files(${PROJECT_NAME} SOURCES ${FILES_FOR_FORMATTING})
+
