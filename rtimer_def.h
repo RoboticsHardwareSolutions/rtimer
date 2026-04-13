@@ -67,6 +67,17 @@ struct timer_elements
     struct timer_elements* next;
 };
 
+#elif defined(STM32G0B1xx)
+
+struct timer_elements
+{
+    uint32_t elapsed_time;
+    uint32_t period;
+    bool     activated;
+    void (*callback)(void);
+    struct timer_elements* next;
+};
+
 #endif  // STM32G474xx
 
 #if defined(RTIMER_FOR_APPLE)
