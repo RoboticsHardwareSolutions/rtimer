@@ -56,18 +56,8 @@
 #endif
 
 #if defined(STM32G474xx) || defined(STM32F103xB) || defined(STM32F072xB) || defined(STM32F091xC) || \
-    defined(STM32F407xx) || defined(STM32F429xx) || defined(STM32F765xx) || defined(STM32F103xE)
-
-struct timer_elements
-{
-    uint32_t elapsed_time;
-    uint32_t period;
-    bool     activated;
-    void (*callback)(void);
-    struct timer_elements* next;
-};
-
-#elif defined(STM32G0B1xx)
+    defined(STM32F407xx) || defined(STM32F429xx) || defined(STM32F765xx) || defined(STM32F103xE) || \
+    defined(STM32G0B1xx)
 
 struct timer_elements
 {
