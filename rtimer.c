@@ -229,11 +229,10 @@ bool rtimer_create(rtimer* instance)
 
 bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void))
 {
-    if (instance == NULL || interval_us == 0)
+    if (instance == NULL)
         return false;
 
-    // TODO check value interval_us if < 100 !!
-    instance->period       = interval_us / 100;
+    instance->period       = interval_us / 100 + ((interval_us % 100 >= 50) ? 1 : 0);
     instance->elapsed_time = 0;
     instance->callback     = cb;
     instance->activated    = true;
@@ -298,14 +297,6 @@ void hardware_timer_cb(TIM_HandleTypeDef* htim)
     {
         current_timer = *timer;
         current_timer->elapsed_time++;
-        timer = (rtimer**) &((*timer)->next);
-    }
-
-    timer = &first_timer;
-
-    while (*timer != NULL)
-    {
-        current_timer = *timer;
         if (current_timer->activated)
         {
             if (current_timer->elapsed_time >= current_timer->period)
@@ -313,7 +304,10 @@ void hardware_timer_cb(TIM_HandleTypeDef* htim)
                 if (current_timer->callback != 0)
                     current_timer->callback();
 
-                current_timer->elapsed_time = 0;
+                if (current_timer->period == 0)
+                    current_timer->activated = false;
+                else
+                    current_timer->elapsed_time = 0;
             }
         }
         timer = (rtimer**) &((*timer)->next);
@@ -465,14 +459,6 @@ void hardware_timer_cb(TIM_HandleTypeDef* htim)
     {
         current_timer = *timer;
         current_timer->elapsed_time++;
-        timer = (rtimer**) &((*timer)->next);
-    }
-
-    timer = &first_timer;
-
-    while (*timer != NULL)
-    {
-        current_timer = *timer;
         if (current_timer->activated)
         {
             if (current_timer->elapsed_time >= current_timer->period)
