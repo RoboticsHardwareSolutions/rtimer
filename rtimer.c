@@ -40,21 +40,17 @@ bool rtimer_create(rtimer* instance)
     *timer = instance;
 
     if (!hardware_started)
-    {
-        if (!hardware_timer_init())
-            return false;
-        else
-            hardware_started = true;
-    }
-    return true;
+        hardware_started = hardware_timer_init();
+    return hardware_started;
 }
 
 bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void))
 {
-    if (instance == NULL || interval_us == 0)
+    if (instance == NULL)
         return false;
 
     // TODO check value interval_us if < 100 !!
+    // interval 0 is meaning one-shot timer
     instance->period       = interval_us / 100;
     instance->elapsed_time = 0;
     instance->callback     = cb;
@@ -130,24 +126,20 @@ bool hardware_timer_deinit(void)
 
 void hardware_timer_cb(TIM_HandleTypeDef* htim)
 {
-    rtimer** timer         = &first_timer;
-    rtimer*  current_timer = NULL;
-
-    while (*timer != NULL)
+    for (rtimer* tmr = first_timer; tmr != NULL; tmr = tmr->next)
     {
-        current_timer = *timer;
-        current_timer->elapsed_time++;
-        if (current_timer->activated)
+        tmr->elapsed_time++;
+        if (tmr->activated && tmr->elapsed_time >= tmr->period)
         {
-            if (current_timer->elapsed_time >= current_timer->period)
-            {
-                if (current_timer->callback != 0)
-                    current_timer->callback();
+            if (tmr->callback != NULL)
+                tmr->callback();
 
-                current_timer->elapsed_time = 0;
-            }
+            // interval 0 is meaning one-shot timer
+            if (tmr->period == 0)
+                tmr->activated = false;
+            else
+                tmr->elapsed_time = 0;
         }
-        timer = (rtimer**) &((*timer)->next);
     }
 }
 
@@ -359,21 +351,17 @@ bool rtimer_create(rtimer* instance)
     *timer = instance;
 
     if (!hardware_started)
-    {
-        if (!hardware_timer_init())
-            return false;
-        else
-            hardware_started = true;
-    }
-    return true;
+        hardware_started = hardware_timer_init();
+    return hardware_started;
 }
 
 bool rtimer_setup(rtimer* instance, uint32_t interval_us, void* cb)
 {
-    if (instance == NULL || interval_us == 0)
+    if (instance == NULL)
         return false;
 
     // TODO check value interval_us if < 100 !!
+    // interval 0 is meaning one-shot timer
     instance->period       = interval_us / 100;
     instance->elapsed_time = 0;
     instance->callback     = cb;
@@ -431,24 +419,20 @@ bool hardware_timer_init(void)
 
 void hardware_timer_cb(TIM_HandleTypeDef* htim)
 {
-    rtimer** timer         = &first_timer;
-    rtimer*  current_timer = NULL;
-
-    while (*timer != NULL)
+    for (rtimer* tmr = first_timer; tmr != NULL; tmr = tmr->next)
     {
-        current_timer = *timer;
-        current_timer->elapsed_time++;
-        if (current_timer->activated)
+        tmr->elapsed_time++;
+        if (tmr->activated && tmr->elapsed_time >= tmr->period)
         {
-            if (current_timer->elapsed_time >= current_timer->period)
-            {
-                if (current_timer->callback != 0)
-                    current_timer->callback();
+            if (tmr->callback != NULL)
+                tmr->callback();
 
-                current_timer->elapsed_time = 0;
-            }
+            // interval 0 is meaning one-shot timer
+            if (tmr->period == 0)
+                tmr->activated = false;
+            else
+                tmr->elapsed_time = 0;
         }
-        timer = (rtimer**) &((*timer)->next);
     }
 }
 
