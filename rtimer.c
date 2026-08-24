@@ -195,10 +195,6 @@ static bool hardware_timer_init(void);
 
 void hardware_timer_cb(TIM_HandleTypeDef* htim);
 
-// static void timer_msp_init_cb(TIM_HandleTypeDef* htim);
-//
-// static void timer_msp_deinit_cb(TIM_HandleTypeDef* htim);
-
 bool rtimer_create(rtimer* instance)
 {
     if (instance == NULL)
@@ -210,21 +206,16 @@ bool rtimer_create(rtimer* instance)
     instance->elapsed_time = 0;
 
     rtimer** timer = &first_timer;
-
     while (*timer != NULL)
     {
         timer = (rtimer**) &((*timer)->next);
     }
+
     *timer = instance;
 
     if (!hardware_started)
-    {
-        if (!hardware_timer_init())
-            return false;
-        else
-            hardware_started = true;
-    }
-    return true;
+        hardware_started = hardware_timer_init();
+    return hardware_started;
 }
 
 bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void))
@@ -232,6 +223,7 @@ bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void))
     if (instance == NULL)
         return false;
 
+    // interval 0 is meaning one-shot timer
     instance->period       = interval_us / 100 + ((interval_us % 100 >= 50) ? 1 : 0);
     instance->elapsed_time = 0;
     instance->callback     = cb;
@@ -267,12 +259,6 @@ bool hardware_timer_init(void)
     config.MasterSlaveMode      = TIM_MASTERSLAVEMODE_DISABLE;
     config.MasterOutputTrigger2 = TIM_TRGO_RESET;
 
-    // if (HAL_TIM_RegisterCallback(&htim4, HAL_TIM_BASE_MSPINIT_CB_ID, timer_msp_init_cb) != HAL_OK)
-    //     return false;
-    //
-    // if (HAL_TIM_RegisterCallback(&htim4, HAL_TIM_BASE_MSPDEINIT_CB_ID, timer_msp_deinit_cb) != HAL_OK)
-    //     return false;
-
     if (HAL_TIM_Base_Init(&htim) != HAL_OK)
         return false;
 
@@ -290,27 +276,20 @@ bool hardware_timer_init(void)
 
 void hardware_timer_cb(TIM_HandleTypeDef* htim)
 {
-    rtimer** timer         = &first_timer;
-    rtimer*  current_timer = NULL;
-
-    while (*timer != NULL)
+    for (rtimer* tmr = first_timer; tmr != NULL; tmr = tmr->next)
     {
-        current_timer = *timer;
-        current_timer->elapsed_time++;
-        if (current_timer->activated)
+        tmr->elapsed_time++;
+        if (tmr->activated && tmr->elapsed_time >= tmr->period)
         {
-            if (current_timer->elapsed_time >= current_timer->period)
-            {
-                if (current_timer->callback != 0)
-                    current_timer->callback();
+            if (tmr->callback != NULL)
+                tmr->callback();
 
-                if (current_timer->period == 0)
-                    current_timer->activated = false;
-                else
-                    current_timer->elapsed_time = 0;
-            }
+            // interval 0 is meaning one-shot timer
+            if (tmr->period == 0)
+                tmr->activated = false;
+            else
+                tmr->elapsed_time = 0;
         }
-        timer = (rtimer**) &((*timer)->next);
     }
 }
 
