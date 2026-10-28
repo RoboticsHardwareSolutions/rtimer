@@ -571,8 +571,10 @@ bool rtimer_create(rtimer* instance)
     {
         timer = (rtimer**) &((*timer)->next);
     }
-    *timer         = instance;
-    instance->next = NULL;
+    *timer          = instance;
+    instance->next  = NULL;
+    instance->queue = NULL;
+    instance->timer = NULL;
     if (gettimeofday(&instance->last_sig, NULL))
     {
         return false;
@@ -587,32 +589,42 @@ bool rtimer_setup(rtimer* instance, uint32_t interval_us, void (*cb)(void))
 
     instance->callback = cb;
 
+    // the dispatch source is created once and re-armed on every subsequent call
+    bool created = false;
+    if (instance->timer == NULL)
+    {
 #    define MAX_NUM_SYMBOL_QUEUE_STR 30
 
-    char queue_num_str[MAX_NUM_SYMBOL_QUEUE_STR];
-    memset(queue_num_str, '\0', MAX_NUM_SYMBOL_QUEUE_STR);
-    sprintf(queue_num_str, "queue pointer: %p", (void*) instance);
+        char queue_num_str[MAX_NUM_SYMBOL_QUEUE_STR];
+        memset(queue_num_str, '\0', MAX_NUM_SYMBOL_QUEUE_STR);
+        sprintf(queue_num_str, "queue pointer: %p", (void*) instance);
 
-    instance->queue = dispatch_queue_create(queue_num_str, 0);
-    instance->timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, instance->queue);
-    dispatch_source_set_cancel_handler(instance->timer, ^{
-      dispatch_release(instance->timer);
-      dispatch_release(instance->queue);
-    });
+        dispatch_queue_t  queue  = dispatch_queue_create(queue_num_str, 0);
+        dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
+        dispatch_source_set_cancel_handler(source, ^{
+          dispatch_release(source);
+          dispatch_release(queue);
+        });
 
-    dispatch_source_set_event_handler(instance->timer, ^{
-      if (instance->callback != NULL)
-      {
-          instance->callback();
-      }
-    });
-    dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, interval_us * 1000);
+        dispatch_source_set_event_handler(source, ^{
+          if (instance->callback != NULL)
+          {
+              instance->callback();
+          }
+        });
+        instance->queue = queue;
+        instance->timer = source;
+        created         = true;
+    }
+
+    dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, (int64_t) interval_us * (int64_t) NSEC_PER_USEC);
     dispatch_source_set_timer(instance->timer, start, DISPATCH_TIME_FOREVER, 0);
     if (gettimeofday(&instance->last_sig, NULL))
     {
         return false;
     }
-    dispatch_resume(instance->timer);
+    if (created)
+        dispatch_resume(instance->timer);
     return true;
 }
 
@@ -632,9 +644,11 @@ uint32_t rtimer_get_elapsed_time(rtimer* instance)
 
 bool rtimer_delete(rtimer* instance)
 {
-    if (instance == NULL)
+    if (instance == NULL || instance->timer == NULL)
         return false;
     dispatch_source_cancel(instance->timer);
+    instance->timer = NULL;
+    instance->queue = NULL;
     return true;
 }
 #endif
